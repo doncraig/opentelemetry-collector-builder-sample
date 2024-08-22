@@ -13,17 +13,20 @@
 # limitations under the License.
 
 FROM golang:1.21 as build
-ARG  OTEL_VERSION=0.86.0
+ARG OTEL_VERSION=0.107.0
 WORKDIR /app
 COPY . .
 RUN go install go.opentelemetry.io/collector/cmd/builder@v${OTEL_VERSION}
 RUN CGO_ENABLED=0 builder --config=builder-config.yaml
 
-FROM gcr.io/distroless/base-debian11
+# FROM gcr.io/distroless/base-debian11
+FROM debian:11-slim
+# COPY --from=busybox:uclibc /bin/sh /bin/sh
 COPY --from=build /app/bin/otelcol-custom /
 # 4317 - default OTLP receiver
 # 55678 - opencensus (tracing) receiver
 # 55679 - zpages
-EXPOSE 4317/tcp 55678/tcp 55679/tcp
+# 8086 - influxdb receiver
+EXPOSE 4317/tcp 55678/tcp 55679/tcp 8086/tcp
 
 CMD ["/otelcol-custom"]
